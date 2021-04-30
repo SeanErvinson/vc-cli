@@ -4,33 +4,22 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/seanervinson/vc/commands"
 )
 
-// Turn this into a map
-const SetCommand = "set"
-const CodeFlag = "c"
-const WorkspaceFlag = "w"
-const NameShortFlag = "n"
-const DescriptionFlag = "d"
-const ListCommand = "list"
-const VerboseFlag = "v"
-
-const ConfigCommand = "config"
-const PathFlag = "path"
-
-const HelpCommand = "help"
-const RemoveCommand = "remove"
-
-var Usage = func() {
-	fmt.Fprintf(os.Stderr, "Custom help %s:\n", os.Args[0])
-
-	flag.VisitAll(func(f *flag.Flag) {
-		fmt.Fprintf(os.Stderr, "    %v\n", f.Usage)
-	})
-}
+const (
+	CodeFlag        = "c"
+	WorkspaceFlag   = "w"
+	NameShortFlag   = "n"
+	DescriptionFlag = "d"
+	VerboseFlag     = "v"
+)
+const (
+	ListCommand   = "list"
+	SetCommand    = "set"
+	RemoveCommand = "remove"
+)
 
 func main() {
 	if len(os.Args) < 2 {
@@ -51,18 +40,18 @@ func main() {
 		fmt.Printf("\t%-8v%-24v\n", "remove", "remove code")
 		os.Exit(0)
 	}
+
 	var action commands.Action
-	switch os.Args[1] {
+	baseCommand := os.Args[1]
+	followingArgs := os.Args[2:]
+
+	switch baseCommand {
 	case SetCommand:
 		flagSet := flag.NewFlagSet(SetCommand, flag.ExitOnError)
 		workspaceFlagValue := flagSet.Bool(WorkspaceFlag, false, "If project is a workspace or not")
 		codeFlagValue := flagSet.String(CodeFlag, "", "Code for the project")
 		descriptionFlagValue := flagSet.String(DescriptionFlag, "", "Description of the project")
-		err := flagSet.Parse(os.Args[2:])
-		if err != nil {
-			fmt.Println("Invalid parameters.")
-			os.Exit(1)
-		}
+		parseFlags(flagSet, followingArgs)
 		if flagSet.NArg() == 0 {
 			fmt.Println("Must provide path to a project")
 			fmt.Printf("%-8s for the current working directory.\n", ".")
@@ -75,38 +64,31 @@ func main() {
 		}
 		projectPath := flagSet.Arg(0)
 		action = commands.SetCommand{Code: *codeFlagValue, Workspace: *workspaceFlagValue, Description: descriptionFlagValue, ProjectPath: projectPath}
-
 	case ListCommand:
 		flagSet := flag.NewFlagSet(ListCommand, flag.ExitOnError)
 		verboseFlag := flagSet.Bool(VerboseFlag, false, "Shows verbose output")
-		err := flagSet.Parse(os.Args[2:])
-		if err != nil {
-			fmt.Println("Invalid parameters.")
-			os.Exit(1)
-		}
+		parseFlags(flagSet, followingArgs)
 		action = commands.ListCommand{Verbose: *verboseFlag}
-
-	// case ConfigCommand:
-	// 	flagSet := flag.NewFlagSet(ConfigCommand, flag.ExitOnError)
-	// 	flagSet.String(PathFlag, "", "Update the project path.")
-	// 	flagSet.String(DescriptionFlag, "", "Update the project description.")
 	case RemoveCommand:
 		flagSet := flag.NewFlagSet(RemoveCommand, flag.ExitOnError)
 		codeFlagValue := flagSet.String(CodeFlag, "", "Given code name of the project")
-		flagSet.Parse(os.Args[2:])
+		parseFlags(flagSet, followingArgs)
 		if len(*codeFlagValue) == 0 {
 			fmt.Printf("the following argument is required: -%v\n", CodeFlag)
 			os.Exit(0)
 		}
 		action = commands.RemoveCommand{Code: *codeFlagValue}
 	default:
-		// Read config.json
-		cmd := exec.Command("code")
-		_, err := cmd.Output()
-		if err != nil {
-			fmt.Println("Something unexpected happened.")
-		}
-		os.Exit(0)
+		action = commands.CodeCommand{Code: baseCommand}
 	}
 	action.Execute()
+	os.Exit(0)
+}
+
+func parseFlags(flagSet *flag.FlagSet, followingArgs []string) {
+	err := flagSet.Parse(followingArgs)
+	if err != nil {
+		fmt.Println("Invalid parameters.")
+		os.Exit(1)
+	}
 }

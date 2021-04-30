@@ -19,17 +19,19 @@ type SetCommand struct {
 }
 
 func (command SetCommand) Execute() {
-	newConfig := models.Config{Description: command.Description, Code: command.Code}
-	cd, _ := os.Getwd()
-	var directoryPath = cd
-	if command.ProjectPath != "." {
-		exist, err := utils.IsDirectoryExist(command.ProjectPath)
-		if err != nil || !exist {
-			fmt.Println("Directory does not exist.")
-			os.Exit(0)
-		}
-		directoryPath = cd
+	data, err := utils.LoadFile(configPath)
+	var configs []models.Config
+	if err == nil {
+		json.Unmarshal(data, &configs)
 	}
+
+	if codeExists(configs, command) {
+		fmt.Printf("Code '%v' already exists.\n", command.Code)
+		os.Exit(0)
+	}
+
+	newConfig := models.Config{Description: command.Description, Code: command.Code}
+	directoryPath := getProjectPath(command.ProjectPath)
 	if command.Workspace {
 		filepath.Walk(directoryPath, func(path string, info fs.FileInfo, err error) error {
 			if filepath.Ext(path) == ".code-workspace" {
@@ -39,6 +41,30 @@ func (command SetCommand) Execute() {
 		})
 	}
 	newConfig.Path = directoryPath
-	data, _ := json.Marshal(newConfig)
+	configs = append(configs, newConfig)
+	data, _ = json.Marshal(configs)
 	utils.SaveFile(configPath, data)
+}
+
+func getProjectPath(path string) string {
+	cd, _ := os.Getwd()
+	var directoryPath = cd
+	if path != "." {
+		exist, err := utils.IsDirectoryExist(path)
+		if err != nil || !exist {
+			fmt.Println("Directory does not exist.")
+			os.Exit(0)
+		}
+		directoryPath = cd
+	}
+	return directoryPath
+}
+
+func codeExists(configs []models.Config, command SetCommand) bool {
+	for _, config := range configs {
+		if config.Code == command.Code {
+			return true
+		}
+	}
+	return false
 }
