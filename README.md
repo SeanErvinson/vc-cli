@@ -1,4 +1,4 @@
-# VS Cli
+# VC Cli
 
 Playing around with GoLang.
 
