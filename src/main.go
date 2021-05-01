@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -40,55 +39,9 @@ func main() {
 		fmt.Printf("\t%-8v%-24v\n", "remove", "remove code")
 		os.Exit(0)
 	}
-
-	var action commands.Action
 	baseCommand := os.Args[1]
-	followingArgs := os.Args[2:]
+	args := os.Args[2:]
 
-	switch baseCommand {
-	case SetCommand:
-		flagSet := flag.NewFlagSet(SetCommand, flag.ExitOnError)
-		workspaceFlagValue := flagSet.Bool(WorkspaceFlag, false, "If project is a workspace or not")
-		codeFlagValue := flagSet.String(CodeFlag, "", "Code for the project")
-		descriptionFlagValue := flagSet.String(DescriptionFlag, "", "Description of the project")
-		parseFlags(flagSet, followingArgs)
-		if flagSet.NArg() == 0 {
-			fmt.Println("Must provide path to a project")
-			fmt.Printf("%-8s for the current working directory.\n", ".")
-			fmt.Printf("%-8s for a specific path.\n", "<path>")
-			os.Exit(1)
-		}
-		if len(*codeFlagValue) == 0 {
-			fmt.Printf("the following argument is required: -%v\n", CodeFlag)
-			os.Exit(0)
-		}
-		projectPath := flagSet.Arg(0)
-		action = commands.SetCommand{Code: *codeFlagValue, Workspace: *workspaceFlagValue, Description: descriptionFlagValue, ProjectPath: projectPath}
-	case ListCommand:
-		flagSet := flag.NewFlagSet(ListCommand, flag.ExitOnError)
-		verboseFlag := flagSet.Bool(VerboseFlag, false, "Shows verbose output")
-		parseFlags(flagSet, followingArgs)
-		action = commands.ListCommand{Verbose: *verboseFlag}
-	case RemoveCommand:
-		flagSet := flag.NewFlagSet(RemoveCommand, flag.ExitOnError)
-		codeFlagValue := flagSet.String(CodeFlag, "", "Given code name of the project")
-		parseFlags(flagSet, followingArgs)
-		if len(*codeFlagValue) == 0 {
-			fmt.Printf("the following argument is required: -%v\n", CodeFlag)
-			os.Exit(0)
-		}
-		action = commands.RemoveCommand{Code: *codeFlagValue}
-	default:
-		action = commands.CodeCommand{Code: baseCommand}
-	}
-	action.Execute()
-	os.Exit(0)
-}
-
-func parseFlags(flagSet *flag.FlagSet, followingArgs []string) {
-	err := flagSet.Parse(followingArgs)
-	if err != nil {
-		fmt.Println("Invalid parameters.")
-		os.Exit(1)
-	}
+	command := commands.CreateCommand(baseCommand, args)
+	command.Execute()
 }

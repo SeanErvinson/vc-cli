@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/seanervinson/vc/models"
 	"github.com/seanervinson/vc/utils"
@@ -17,10 +18,14 @@ const DescriptionHeader = "DESCRIPTION"
 const PathHeader = "PATH"
 
 func (command ListCommand) Execute() {
-	data, _ := utils.LoadFile(configPath)
+	data, err := utils.LoadFile(configPath)
+	if err != nil {
+		os.Exit(1)
+	}
 	var configs []models.Config
 	if err := json.Unmarshal(data, &configs); err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 	s := "%-16v%-40v\n"
 	if command.Verbose {

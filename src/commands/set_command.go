@@ -20,6 +20,9 @@ type SetCommand struct {
 
 func (command SetCommand) Execute() {
 	data, err := utils.LoadFile(configPath)
+	if err != nil {
+		os.Exit(1)
+	}
 	var configs []models.Config
 	if err == nil {
 		json.Unmarshal(data, &configs)

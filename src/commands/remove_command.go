@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+	"os"
 
 	"github.com/seanervinson/vc/models"
 	"github.com/seanervinson/vc/utils"
@@ -12,7 +13,10 @@ type RemoveCommand struct {
 }
 
 func (command RemoveCommand) Execute() {
-	data, _ := utils.LoadFile(configPath)
+	data, err := utils.LoadFile(configPath)
+	if err != nil {
+		os.Exit(1)
+	}
 	var configs []models.Config
 	json.Unmarshal(data, &configs)
 	for i, config := range configs {

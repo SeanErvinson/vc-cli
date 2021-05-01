@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 )
@@ -23,5 +24,8 @@ func SaveFile(fileName string, data []byte) error {
 
 func LoadFile(fileName string) ([]byte, error) {
 	data, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		err = errors.New("could not load configuration file")
+	}
 	return data, err
 }

@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 
 	"github.com/seanervinson/vc/models"
@@ -14,7 +15,10 @@ type CodeCommand struct {
 }
 
 func (command CodeCommand) Execute() {
-	data, _ := utils.LoadFile(configPath)
+	data, err := utils.LoadFile(configPath)
+	if err != nil {
+		os.Exit(1)
+	}
 	var configs []models.Config
 	if err := json.Unmarshal(data, &configs); err != nil {
 		fmt.Println(err)
